@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TRADER CONTROL — 23-06-2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--border:#222;--green:#00ff88;--yellow:#c8ff00;--cyan:#00d4ff;--red:#ff3b3b;--orange:#ff8c00;--text:#e0e0e0;--muted:#555;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100vh;}
+.header{padding:24px 32px 0;border-bottom:1px solid var(--border);}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:16px;}
+.brand h1{font-size:2.2rem;font-weight:900;color:var(--yellow);letter-spacing:2px;line-height:1;}
+.brand p{font-size:.7rem;letter-spacing:4px;color:var(--muted);margin-top:4px;}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.kpi-bar{display:flex;gap:24px;flex-wrap:wrap;}
+.kpi{text-align:center;}.kpi .val{font-size:1.4rem;font-weight:700;letter-spacing:1px;}.kpi .lbl{font-size:.6rem;letter-spacing:3px;color:var(--muted);margin-top:2px;}
+.kpi.green .val{color:var(--green);}.kpi.cyan .val{color:var(--cyan);}.kpi.yellow .val{color:var(--yellow);}
+.save-indicator{font-size:.6rem;letter-spacing:2px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+.save-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);}.save-dot.saved{background:var(--green);}
+.tabs{display:flex;padding:0 32px;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;}
+.tab{padding:14px 16px;font-size:.62rem;letter-spacing:2px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s;}
+.tab:hover{color:var(--text);}.tab.active{color:var(--yellow);border-bottom-color:var(--yellow);}
+.tab.lancar-tab.active{color:var(--green);border-bottom-color:var(--green);}
+.content{padding:28px 32px;display:none;}.content.active{display:block;}
+.section-label{font-size:.6rem;letter-spacing:4px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.cards{display:grid;gap:12px;margin-bottom:28px;}
+.cards-4{grid-template-columns:repeat(4,1fr);}.cards-3{grid-template-columns:repeat(3,1fr);}.cards-2{grid-template-columns:repeat(2,1fr);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:20px;text-align:center;}
+.card .cv{font-size:1.5rem;font-weight:700;margin-bottom:6px;}.card .cl{font-size:.58rem;letter-spacing:3px;color:var(--muted);}
+.green{color:var(--green);}.cyan{color:var(--cyan);}.red{color:var(--red);}.yellow{color:var(--yellow);}.white{color:#fff;}.orange{color:var(--orange);}
+.chart-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:28px;}
+.chart-wrap canvas{max-height:260px;}
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:auto;margin-bottom:28px;}
+table{width:100%;border-collapse:collapse;font-size:.72rem;}
+thead tr{background:#111;}
+th{padding:10px 14px;text-align:left;font-size:.58rem;letter-spacing:3px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:9px 14px;border-bottom:1px solid #161616;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}tr:hover td{background:#161616;}
+.win-txt{color:var(--green);}.loss-txt{color:var(--red);}
+.badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:.6rem;letter-spacing:1px;font-weight:700;}
+.badge.w{background:#00ff8822;color:var(--green);border:1px solid #00ff8844;}
+.badge.l{background:#ff3b3b22;color:var(--red);border:1px solid #ff3b3b44;}
+.badge.c{background:#00d4ff22;color:var(--cyan);border:1px solid #00d4ff44;}
+.badge.v{background:#ff8c0022;color:var(--orange);border:1px solid #ff8c0044;}
+.new-row td{background:#00ff8806 !important;}
+.hor-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.hor-card{border:1px solid;border-radius:4px;padding:20px;text-align:center;}
+.hor-card.best{border-color:#00ff8844;background:#00ff8808;}
+.hor-card.mid{border-color:#ff8c0044;background:#ff8c0008;}
+.hor-card.worst{border-color:#ff3b3b44;background:#ff3b3b08;}
+.hor-card .ht{font-size:.58rem;letter-spacing:3px;margin-bottom:10px;}
+.hor-card.best .ht{color:var(--green);}.hor-card.mid .ht,.hor-card.worst .ht{color:var(--orange);}
+.hor-card .htime{font-size:2rem;font-weight:900;letter-spacing:2px;margin-bottom:4px;}
+.hor-card.best .htime{color:var(--green);}.hor-card.mid .htime,.hor-card.worst .htime{color:var(--orange);}
+.hor-card .hsub{font-size:.65rem;color:var(--muted);}
+.mc-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.mc-verdict{background:#00ff8810;border:1px solid #00ff8833;border-radius:4px;padding:12px 20px;}
+.mc-verdict .score{font-size:1.1rem;color:var(--green);font-weight:700;letter-spacing:1px;}
+.mc-verdict .sub{font-size:.6rem;letter-spacing:2px;color:var(--muted);margin-top:2px;}
+.mc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.mc-stat{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:14px;text-align:center;}
+.mc-stat .sv{font-size:1.3rem;font-weight:700;}.mc-stat .sl{font-size:.55rem;letter-spacing:2px;color:var(--muted);margin-top:4px;}
+.mc-dist{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
+.pct-card{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:12px;text-align:center;}
+.pct-card .pv{font-size:1rem;font-weight:700;color:var(--cyan);}.pct-card .pr{font-size:.65rem;color:var(--green);margin:2px 0;}.pct-card .pp{font-size:.55rem;color:var(--muted);}
+[contenteditable]{outline:none;border-radius:2px;transition:.2s;}
+[contenteditable]:hover{background:rgba(200,255,0,0.04);cursor:text;}
+[contenteditable]:focus{background:rgba(200,255,0,0.07);box-shadow:0 0 0 1px #c8ff0033;}
+.edit-hint{font-size:.55rem;letter-spacing:2px;color:var(--muted);margin-bottom:10px;font-style:italic;}
+.edit-hint::before{content:'✏️  ';}
+.regra{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:8px;display:flex;gap:14px;}
+.regra-num{color:var(--yellow);font-weight:900;font-size:1rem;min-width:28px;}
+.regra-text{font-size:.75rem;line-height:1.6;}.regra-text strong{color:var(--green);}
+.proto-step{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:8px;display:flex;gap:14px;}
+.proto-icon{font-size:1.2rem;min-width:30px;text-align:center;}
+.proto-text h4{font-size:.7rem;letter-spacing:2px;color:var(--red);margin-bottom:4px;}.proto-text p{font-size:.72rem;line-height:1.6;}
+.diario-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.journal-form{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:20px;}
+.form-row{margin-bottom:12px;}.form-row label{display:block;font-size:.55rem;letter-spacing:3px;color:var(--muted);margin-bottom:5px;}
+.form-row input,.form-row select,.form-row textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:.75rem;padding:8px 10px;outline:none;transition:.2s;}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--yellow);}
+.form-row select option{background:var(--bg3);}.form-row textarea{resize:vertical;min-height:110px;line-height:1.6;}
+.mood-bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.mood-btn{padding:4px 10px;border-radius:2px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:.65rem;cursor:pointer;font-family:'Courier New',monospace;transition:.2s;}
+.mood-btn:hover{border-color:var(--yellow);color:var(--yellow);}.mood-btn.sel{border-color:var(--yellow);background:#c8ff0015;color:var(--yellow);}
+.btn-save{width:100%;padding:10px;background:#c8ff0015;border:1px solid var(--yellow);border-radius:3px;color:var(--yellow);font-family:'Courier New',monospace;font-size:.7rem;letter-spacing:3px;cursor:pointer;margin-top:8px;transition:.2s;}
+.btn-save:hover{background:#c8ff0030;}
+.journal-entries{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow-y:auto;padding-right:4px;}
+.journal-entry{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:14px 16px;}
+.entry-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.entry-date{font-size:.6rem;letter-spacing:2px;color:var(--cyan);}
+.entry-session{font-size:.6rem;letter-spacing:1px;padding:2px 8px;border-radius:2px;}
+.entry-session.pos{background:#00ff8815;color:var(--green);border:1px solid #00ff8833;}
+.entry-session.neg{background:#ff3b3b15;color:var(--red);border:1px solid #ff3b3b33;}
+.entry-session.neu{background:#ffffff10;color:var(--muted);border:1px solid #333;}
+.entry-title{font-size:.72rem;color:var(--yellow);font-weight:700;margin-bottom:6px;}
+.entry-body{font-size:.72rem;line-height:1.7;white-space:pre-wrap;}
+.entry-delete{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;}
+.entry-delete:hover{color:var(--red);}
+.diario-entry{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin-bottom:8px;}
+.diario-date{font-size:.6rem;letter-spacing:3px;color:var(--muted);margin-bottom:8px;}
+.diario-trades{display:flex;flex-wrap:wrap;gap:6px;}
+.diario-trade{font-size:.68rem;padding:3px 10px;border-radius:2px;}
+.diario-trade.g{background:#00ff8815;border:1px solid #00ff8833;color:var(--green);}
+.diario-trade.l{background:#ff3b3b15;border:1px solid #ff3b3b33;color:var(--red);}
+.hoje-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.hoje-date{font-size:1.2rem;color:var(--yellow);font-weight:700;letter-spacing:2px;}
+.hoje-status-badge{font-size:.6rem;letter-spacing:3px;color:var(--green);border:1px solid #00ff8844;padding:4px 12px;border-radius:2px;}
+.lancar-layout{display:grid;grid-template-columns:380px 1fr;gap:24px;}
+.lancar-form{background:var(--bg2);border:1px solid #00ff8833;border-radius:4px;padding:24px;}
+.lancar-form h3{font-size:.6rem;letter-spacing:4px;color:var(--green);margin-bottom:20px;}
+.sel-group{display:flex;gap:8px;margin-top:4px;}
+.sel-btn{flex:1;padding:10px 6px;border-radius:3px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:.7rem;letter-spacing:2px;cursor:pointer;font-family:'Courier New',monospace;transition:.2s;text-align:center;}
+.sel-btn:hover{border-color:var(--muted);color:var(--text);}
+.sel-btn.sel{border-color:var(--green);background:#00ff8818;color:var(--green);}
+.sel-btn.sel-c{border-color:var(--cyan);background:#00d4ff18;color:var(--cyan);}
+.sel-btn.sel-v{border-color:var(--orange);background:#ff8c0018;color:var(--orange);}
+.pts-row{display:grid;grid-template-columns:repeat(4,1fr) 1.5fr;gap:8px;margin-top:4px;}
+.pts-preset{padding:10px 4px;border-radius:3px;border:1px solid var(--border);background:var(--bg3);font-family:'Courier New',monospace;font-size:.7rem;cursor:pointer;text-align:center;transition:.2s;}
+.pts-preset.pos{color:var(--green);}.pts-preset.neg{color:var(--red);}.pts-preset:hover{border-color:var(--muted);}
+.pts-preset.sel-c{border-color:var(--cyan) !important;color:var(--cyan) !important;}
+.pts-input{background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:.85rem;padding:9px 10px;outline:none;width:100%;text-align:center;}
+.pts-input:focus{border-color:var(--yellow);}
+/* ── CONTRATOS ROW ── */
+.contratos-row{display:grid;grid-template-columns:repeat(5,1fr) 1.5fr;gap:8px;margin-top:4px;}
+.ct-btn{padding:10px 4px;border-radius:3px;border:1px solid var(--border);background:var(--bg3);font-family:'Courier New',monospace;font-size:.75rem;cursor:pointer;text-align:center;color:var(--muted);transition:.2s;}
+.ct-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.ct-btn.sel-c{border-color:var(--cyan);background:#00d4ff15;color:var(--cyan);font-weight:700;}
+/* ───────────────── */
+.preview-box{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:14px;margin:14px 0;font-size:.72rem;line-height:1.8;min-height:80px;color:var(--muted);}
+.preview-box.ready{border-color:#00ff8833;background:#00ff8808;}
+.preview-box .pv{font-size:1.1rem;font-weight:700;}
+.btn-registrar{width:100%;padding:14px;background:#00ff8820;border:2px solid var(--green);border-radius:3px;color:var(--green);font-family:'Courier New',monospace;font-size:.8rem;letter-spacing:4px;cursor:pointer;transition:.2s;font-weight:700;}
+.btn-registrar:hover{background:#00ff8835;}.btn-registrar:disabled{opacity:.35;cursor:not-allowed;}
+.btn-desfazer{width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-family:'Courier New',monospace;font-size:.65rem;letter-spacing:2px;cursor:pointer;margin-top:8px;transition:.2s;}
+.btn-desfazer:hover{border-color:var(--red);color:var(--red);}.btn-desfazer:disabled{opacity:.3;cursor:not-allowed;}
+.log-entry{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.log-entry .le-left{display:flex;align-items:center;gap:12px;}
+.log-entry .le-n{font-size:.6rem;color:var(--muted);}.log-entry .le-info{font-size:.75rem;}.log-entry .le-result{font-size:1rem;font-weight:700;}
+.alert-success{background:#00ff8815;border:1px solid var(--green);border-radius:3px;padding:10px 14px;font-size:.72rem;color:var(--green);margin-top:10px;display:none;}
+.export-box{background:var(--bg2);border:1px solid #c8ff0033;border-radius:4px;padding:24px;margin-top:20px;}
+.export-box h3{font-size:.6rem;letter-spacing:4px;color:var(--yellow);margin-bottom:16px;}
+.btn-export{width:100%;padding:14px;background:#c8ff0015;border:2px solid var(--yellow);border-radius:3px;color:var(--yellow);font-family:'Courier New',monospace;font-size:.8rem;letter-spacing:3px;cursor:pointer;transition:.2s;font-weight:700;margin-bottom:10px;}
+.btn-export:hover{background:#c8ff0028;}
+.btn-clear{width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-family:'Courier New',monospace;font-size:.65rem;letter-spacing:2px;cursor:pointer;transition:.2s;}
+.btn-clear:hover{border-color:var(--red);color:var(--red);}
+.publish-steps{margin-top:16px;}
+.pub-step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start;}
+.pub-num{width:22px;height:22px;border-radius:50%;border:1px solid var(--yellow);color:var(--yellow);font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.pub-text{font-size:.72rem;line-height:1.6;color:var(--text);}
+.pub-text a{color:var(--cyan);text-decoration:none;}.pub-text a:hover{text-decoration:underline;}
+.pub-text strong{color:var(--green);}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+@media(max-width:900px){.cards-4{grid-template-columns:repeat(2,1fr);}.hor-cards{grid-template-columns:1fr;}.mc-dist{grid-template-columns:repeat(3,1fr);}.mc-stats{grid-template-columns:repeat(2,1fr);}.lancar-layout{grid-template-columns:1fr;}.diario-layout{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="brand"><h1>TRADER<br>CONTROL</h1><p>PAINEL DE DISCIPLINA</p></div>
+    <div class="header-right">
+      <div class="kpi-bar">
+        <div class="kpi green"><div class="val" id="hWinRate">57,8%</div><div class="lbl">WIN RATE</div></div>
+        <div class="kpi green"><div class="val" id="hRetorno">67,6%</div><div class="lbl">RETORNO</div></div>
+        <div class="kpi cyan"><div class="val" id="hSharpe">0,1960</div><div class="lbl">SHARPE</div></div>
+        <div class="kpi yellow"><div class="val" id="hResultado">R$ 676,00</div><div class="lbl">RESULTADO</div></div>
+      </div>
+      <div class="save-indicator"><div class="save-dot saved" id="saveDot"></div><span id="saveLabel">dados salvos automaticamente</span></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab" onclick="showTab('performance',this)">📊 PERFORMANCE</div>
+    <div class="tab" onclick="showTab('trades',this)">📋 TRADES</div>
+    <div class="tab" onclick="showTab('hoje',this)">HOJE</div>
+    <div class="tab" onclick="showTab('horarios',this)">⏰ HORÁRIOS</div>
+    <div class="tab" onclick="showTab('protocolo',this)">PROTOCOLO LOSS</div>
+    <div class="tab" onclick="showTab('regras',this)">REGRAS</div>
+    <div class="tab" onclick="showTab('diario',this)">📓 DIÁRIO</div>
+    <div class="tab" onclick="showTab('montecarlo',this)">📈 MONTE CARLO</div>
+    <div class="tab lancar-tab active" onclick="showTab('lancar',this)">➕ LANÇAR TRADE</div>
+  </div>
+</div>
+<div class="content" id="tab-performance">
+  <div class="section-label">VISÃO GERAL</div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv green" id="pResultado">R$ 676,00</div><div class="cl">RESULTADO TOTAL</div></div>
+    <div class="card"><div class="cv green" id="pWinRate">57,8%</div><div class="cl">WIN RATE</div></div>
+    <div class="card"><div class="cv cyan" id="pSharpe">0,1960</div><div class="cl">SHARPE INDEX</div></div>
+    <div class="card"><div class="cv white" id="pTrades">64</div><div class="cl">TOTAL TRADES</div></div>
+  </div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv green" id="pWins">37</div><div class="cl">VENCEDORES</div></div>
+    <div class="card"><div class="cv red" id="pLosses">27</div><div class="cl">PERDEDORES</div></div>
+    <div class="card"><div class="cv green" id="pRetorno">+67,60%</div><div class="cl">RETORNO TOTAL</div></div>
+    <div class="card"><div class="cv red" id="pDD">-17,18%</div><div class="cl">MAX DRAWDOWN</div></div>
+  </div>
+  <div class="section-label">CURVA DE CAPITAL</div>
+  <div class="chart-wrap"><canvas id="capitalChart"></canvas></div>
+  <div class="section-label">INDICADORES AVANÇADOS</div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv cyan" id="pSortino">0,3186</div><div class="cl">SORTINO INDEX</div></div>
+    <div class="card"><div class="cv green" id="pPF">1,36x</div><div class="cl">PROFIT FACTOR</div></div>
+    <div class="card"><div class="cv yellow" id="pEV">52,8 pts</div><div class="cl">EXPECTATIVA MATEMÁTICA</div></div>
+    <div class="card"><div class="cv white" id="pStd">4,61%</div><div class="cl">DESVIO PADRÃO</div></div>
+  </div>
+  <div class="cards cards-3">
+    <div class="card"><div class="cv green" id="pMaiorGain">515 pts</div><div class="cl">MAIOR GAIN</div></div>
+    <div class="card"><div class="cv red" id="pMaiorLoss">-350 pts</div><div class="cl">MAIOR LOSS</div></div>
+    <div class="card"><div class="cv cyan" id="pCapital">R$ 1.606</div><div class="cl">CAPITAL ATUAL</div></div>
+  </div>
+</div>
+<div class="content" id="tab-trades">
+  <div class="section-label">HISTÓRICO DE OPERAÇÕES — <span id="tTotal">64</span> TRADES</div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>DATA</th><th>TIPO</th><th>HORÁRIO</th><th>PONTOS</th><th>R$</th><th>CAPITAL</th><th>RETORNO %</th><th>WIN RATE</th><th>DRAWDOWN</th><th>OBS</th></tr></thead><tbody id="tradesBody"></tbody></table></div>
+</div>
+<div class="content" id="tab-hoje">
+  <div class="hoje-header"><div class="hoje-date" id="hojeDate">23/06/2026 — TERÇA-FEIRA</div><div class="hoje-status-badge">✓ ATUALIZADO</div></div>
+  <div class="section-label">RESULTADO DO DIA</div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv white" id="hojeTrades">2</div><div class="cl">TRADES HOJE</div></div>
+    <div class="card"><div class="cv green" id="hojeWins">0</div><div class="cl">WINS</div></div>
+    <div class="card"><div class="cv red" id="hojeLosses">2</div><div class="cl">LOSSES</div></div>
+    <div class="card"><div class="cv green" id="hojeWR">0,0%</div><div class="cl">WIN RATE DIA</div></div>
+  </div>
+  <div class="cards cards-3">
+    <div class="card"><div class="cv red" id="hojePts">-700 pts</div><div class="cl">PONTOS HOJE</div></div>
+    <div class="card"><div class="cv red" id="hojeRs">-R$ 140.00</div><div class="cl">RESULTADO HOJE</div></div>
+    <div class="card"><div class="cv cyan" id="hojeCap">R$ 1.606</div><div class="cl">CAPITAL ENCERRAMENTO</div></div>
+  </div>
+  <div class="section-label">OPERAÇÕES DO DIA</div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>TIPO</th><th>HORÁRIO</th><th>PONTOS</th><th>R$</th><th>CAPITAL</th><th>RESULTADO</th><th>OBS</th></tr></thead><tbody id="hojeBody"><tr><td>63</td><td><span class="badge c">C</span></td><td>10:15</td><td class="loss-txt">-350</td><td class="loss-txt">-R$ 70.00</td><td>R$ 1.676</td><td><span class="badge l">LOSS</span></td><td style="color:var(--muted);font-size:.65rem">COMPRA NO ROMPIMENTO DE MAXIMA</td></tr><tr><td>64</td><td><span class="badge c">C</span></td><td>10:15</td><td class="loss-txt">-350</td><td class="loss-txt">-R$ 70.00</td><td>R$ 1.606</td><td><span class="badge l">LOSS</span></td><td style="color:var(--muted);font-size:.65rem"></td></tr></tbody></table></div>
+</div>
+<div class="content" id="tab-horarios">
+  <div class="section-label">PERFORMANCE POR HORÁRIO</div>
+  <div class="hor-cards" id="horCards"></div>
+  <div class="section-label">TABELA COMPARATIVA</div>
+  <div class="tbl-wrap"><table><thead><tr><th>HORÁRIO</th><th>TRADES</th><th>WINS</th><th>LOSSES</th><th>WIN RATE</th><th>GAIN (pts)</th><th>LOSS (pts)</th><th>LÍQUIDO (pts)</th><th>LÍQUIDO (R$)</th></tr></thead><tbody id="horBody"></tbody></table></div>
+  <div class="section-label">GRÁFICO COMPARATIVO</div>
+  <div class="chart-wrap"><canvas id="horariosChart"></canvas></div>
+</div>
+<div class="content" id="tab-protocolo">
+  <div class="section-label">PROTOCOLO DE GESTÃO DE RISCO</div>
+  <div class="edit-hint">Clique em qualquer texto para editar diretamente</div>
+  <div class="proto-step"><div class="proto-icon">🛑</div><div class="proto-text"><h4 contenteditable="true">STOP DIÁRIO — 3 LOSSES CONSECUTIVOS</h4><p contenteditable="true">Ao acumular 3 losses consecutivos no mesmo dia, ENCERRAR operações imediatamente. Não tentar recuperar.</p></div></div>
+  <div class="proto-step"><div class="proto-icon">⚠️</div><div class="proto-text"><h4 contenteditable="true">DRAWDOWN MÁXIMO — -10% DO CAPITAL</h4><p contenteditable="true">Se o drawdown atingir -10% do capital em qualquer momento do dia, encerrar a sessão sem exceções.</p></div></div>
+  <div class="proto-step"><div class="proto-icon">📉</div><div class="proto-text"><h4 contenteditable="true">APÓS LOSS — PAUSA OBRIGATÓRIA DE 5 MIN</h4><p contenteditable="true">Nunca operar por "vingança". Revisar se o setup ainda está presente e se o emocional está neutro.</p></div></div>
+  <div class="proto-step"><div class="proto-icon">📊</div><div class="proto-text"><h4 contenteditable="true">LIMITE DE TRADES POR HORÁRIO</h4><p contenteditable="true">Máximo de 3 trades por horário. Se todos derem loss, não operar mais nesse horário no dia.</p></div></div>
+  <div class="proto-step"><div class="proto-icon">✅</div><div class="proto-text"><h4 contenteditable="true">META DIÁRIA ATINGIDA</h4><p contenteditable="true">Ao atingir +2 gains no dia, avaliar se continua. Saber quando parar é parte da disciplina.</p></div></div>
+  <div class="section-label">DRAWDOWNS HISTÓRICOS</div>
+  <div class="cards cards-3">
+    <div class="card"><div class="cv red" id="pDD2">-17,18%</div><div class="cl">DRAWDOWN MÁXIMO</div></div>
+    <div class="card"><div class="cv red">-16,47%</div><div class="cl">SEGUNDO MAIOR (05/06 e 09/06)</div></div>
+    <div class="card"><div class="cv red" id="pDDAtual">-11,56%</div><div class="cl">DRAWDOWN ATUAL</div></div>
+  </div>
+</div>
+<div class="content" id="tab-regras">
+  <div class="section-label">REGRAS DE OPERAÇÃO — ROMPIMENTO 09:15 / 10:15 / 11:30</div>
+  <div class="edit-hint">Clique em qualquer regra para editar diretamente</div>
+  <div class="regra"><div class="regra-num">01</div><div class="regra-text" contenteditable="true"><strong>SETUP OBRIGATÓRIO:</strong> Operar apenas nos horários definidos: 09:15, 10:15 e 11:30. Nenhuma operação fora desses horários.</div></div>
+  <div class="regra"><div class="regra-num">02</div><div class="regra-text" contenteditable="true"><strong>ALVO:</strong> 350 pontos por trade. Não mover o alvo. Deixar o mercado trabalhar até atingir alvo ou stop.</div></div>
+  <div class="regra"><div class="regra-num">03</div><div class="regra-text" contenteditable="true"><strong>STOP:</strong> 350 pontos por trade. Stop e alvo iguais = Risco/Retorno 1:1. A vantagem vem do win rate &gt; 50%.</div></div>
+  <div class="regra"><div class="regra-num">04</div><div class="regra-text" contenteditable="true"><strong>DIREÇÃO:</strong> Seguir o rompimento. Se romper para cima → Compra (C). Se romper para baixo → Venda (V). Nunca antecipar.</div></div>
+  <div class="regra"><div class="regra-num">05</div><div class="regra-text" contenteditable="true"><strong>TAMANHO DA POSIÇÃO:</strong> 1 contrato de mini índice. Valor por ponto: R$ 0,20. Alvo = R$ 70,00 | Stop = R$ 70,00.</div></div>
+  <div class="regra"><div class="regra-num">06</div><div class="regra-text" contenteditable="true"><strong>NÃO INTERFERIR:</strong> Após entrar, não mover stop ou alvo. A estratégia é mecânica. Decisões emocionais destroem a edge.</div></div>
+  <div class="regra"><div class="regra-num">07</div><div class="regra-text" contenteditable="true"><strong>REGISTRAR TUDO:</strong> Cada trade deve ser lançado no dashboard com data, horário, tipo, resultado e observações.</div></div>
+  <div class="regra"><div class="regra-num">08</div><div class="regra-text" contenteditable="true"><strong>RESPEITAR O PROTOCOLO DE LOSS:</strong> 3 losses consecutivos = encerrar o dia. Sem exceções.</div></div>
+  <div class="section-label">CONFIGURAÇÕES</div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv yellow">350 pts</div><div class="cl">ALVO</div></div>
+    <div class="card"><div class="cv red">350 pts</div><div class="cl">STOP</div></div>
+    <div class="card"><div class="cv cyan">R$ 0,20</div><div class="cl">VALOR/PONTO</div></div>
+    <div class="card"><div class="cv white">R$ 1.000,00</div><div class="cl">CAPITAL INICIAL</div></div>
+  </div>
+</div>
+<div class="content" id="tab-diario">
+  <div class="diario-layout">
+    <div>
+      <div class="section-label">NOVA ENTRADA</div>
+      <div class="journal-form">
+        <div class="form-row"><label>DATA</label><input type="date" id="jData"></div>
+        <div class="form-row"><label>SESSÃO</label><select id="jSessao"><option value="pos">✅ Sessão positiva</option><option value="neg">❌ Sessão negativa</option><option value="neu">⚖️ Sessão neutra / sem trade</option></select></div>
+        <div class="form-row"><label>TÍTULO</label><input type="text" id="jTitulo" placeholder="Ex: Boa execução no 09:15..."></div>
+        <div class="form-row"><label>ESTADO EMOCIONAL</label>
+          <div class="mood-bar">
+            <button class="mood-btn" onclick="selMood(this,'😤 Ansioso')">😤 Ansioso</button>
+            <button class="mood-btn" onclick="selMood(this,'😊 Calmo')">😊 Calmo</button>
+            <button class="mood-btn" onclick="selMood(this,'😠 Frustrado')">😠 Frustrado</button>
+            <button class="mood-btn" onclick="selMood(this,'🎯 Focado')">🎯 Focado</button>
+            <button class="mood-btn" onclick="selMood(this,'😴 Cansado')">😴 Cansado</button>
+            <button class="mood-btn" onclick="selMood(this,'💪 Confiante')">💪 Confiante</button>
+          </div>
+          <input type="hidden" id="jMood" value="">
+        </div>
+        <div class="form-row"><label>ANOTAÇÕES DO DIA</label><textarea id="jTexto" placeholder="O que aconteceu hoje? Seguiu as regras? O que pode melhorar?"></textarea></div>
+        <div class="form-row"><label>LIÇÕES APRENDIDAS</label><textarea id="jLicoes" placeholder="O que aprendeu com os trades de hoje?" style="min-height:70px;"></textarea></div>
+        <button class="btn-save" onclick="salvarEntrada()">💾 SALVAR ENTRADA</button>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">ENTRADAS SALVAS <span id="entryCount" style="color:var(--yellow)">(21)</span></div>
+      <div class="journal-entries" id="journalEntries"></div>
+    </div>
+  </div>
+  <div style="margin-top:28px;"><div class="section-label">LOG AUTOMÁTICO DE TRADES</div><div id="diarioContent"></div></div>
+</div>
+<div class="content" id="tab-montecarlo">
+  <div class="mc-header">
+    <div><div style="font-size:.6rem;letter-spacing:4px;color:var(--muted);margin-bottom:6px;">SIMULAÇÃO DE MONTE CARLO</div><div style="font-size:.75rem;">10.000 simulações · 43 trades reais · Capital inicial R$ 1.000</div></div>
+    <div class="mc-verdict"><div class="score">🏆 ESTRATÉGIA EXCELENTE — SCORE 9/10</div><div class="sub">GERADO EM 11/06/2026 · VALIDADO ESTATISTICAMENTE</div></div>
+  </div>
+  <div class="section-label">PROBABILIDADES</div>
+  <div class="mc-stats">
+    <div class="mc-stat"><div class="sv green">93,4%</div><div class="sl">PROBABILIDADE DE LUCRO</div></div>
+    <div class="mc-stat"><div class="sv orange">2,5%</div><div class="sl">PROB. PERDA &gt; 20%</div></div>
+    <div class="mc-stat"><div class="sv green">0,4%</div><div class="sl">RISCO DE RUÍNA &gt; 50%</div></div>
+  </div>
+  <div class="section-label">DISTRIBUIÇÃO DE CAPITAL FINAL (PERCENTIS)</div>
+  <div class="mc-dist">
+    <div class="pct-card"><div class="pv">R$ 938</div><div class="pr" style="color:var(--red)">-6,2%</div><div class="pp">P5 — PIOR CENÁRIO</div></div>
+    <div class="pct-card"><div class="pv">R$ 1.363</div><div class="pr">+36,3%</div><div class="pp">P25 — CONSERVADOR</div></div>
+    <div class="pct-card"><div class="pv">R$ 1.643</div><div class="pr">+64,3%</div><div class="pp">P50 — MEDIANA</div></div>
+    <div class="pct-card"><div class="pv">R$ 1.923</div><div class="pr">+92,3%</div><div class="pp">P75 — OTIMISTA</div></div>
+    <div class="pct-card"><div class="pv">R$ 2.343</div><div class="pr">+134,3%</div><div class="pp">P95 — EXCEPCIONAL</div></div>
+  </div>
+  <div class="section-label">DISTRIBUIÇÃO DOS RESULTADOS</div>
+  <div class="chart-wrap"><canvas id="mcChart"></canvas></div>
+  <div class="section-label">MÉTRICAS DA ESTRATÉGIA</div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv green">62,8%</div><div class="cl">WIN RATE (≥60% ✓)</div></div>
+    <div class="card"><div class="cv green">1,57x</div><div class="cl">PROFIT FACTOR (≥1.5x ✓)</div></div>
+    <div class="card"><div class="cv cyan">R$ 15,31</div><div class="cl">EXPECTATIVA / TRADE</div></div>
+    <div class="card"><div class="cv yellow">9/10</div><div class="cl">SCORE MONTE CARLO</div></div>
+  </div>
+  <div class="cards cards-4">
+    <div class="card"><div class="cv green">R$ 1.645,16</div><div class="cl">CAPITAL MÉDIO ESPERADO</div></div>
+    <div class="card"><div class="cv cyan">0,97x</div><div class="cl">RELAÇÃO RISCO/RETORNO</div></div>
+    <div class="card"><div class="cv white">R$ 437,40</div><div class="cl">DESVIO PADRÃO SIMULAÇÕES</div></div>
+    <div class="card"><div class="cv cyan" id="mcSortino">—</div><div class="cl">SORTINO INDEX (REAL)</div></div>
+  </div>
+</div>
+<div class="content active" id="tab-lancar">
+  <div class="lancar-layout">
+    <div>
+      <div class="section-label">REGISTRAR OPERAÇÃO</div>
+      <div class="lancar-form">
+        <h3>NOVO TRADE</h3>
+        <div class="form-row"><label>DATA</label><input type="date" id="ltData"></div>
+        <div class="form-row"><label>HORÁRIO DO SINAL</label>
+          <div class="sel-group">
+            <button class="sel-btn" id="h0915" onclick="selHora('09:15')">09:15</button>
+            <button class="sel-btn" id="h1015" onclick="selHora('10:15')">10:15</button>
+            <button class="sel-btn" id="h1130" onclick="selHora('11:30')">11:30</button>
+          </div>
+        </div>
+        <div class="form-row"><label>DIREÇÃO</label>
+          <div class="sel-group">
+            <button class="sel-btn" id="tC" onclick="selTipo('C')">📈 COMPRA</button>
+            <button class="sel-btn" id="tV" onclick="selTipo('V')">📉 VENDA</button>
+          </div>
+        </div>
+        <div class="form-row"><label>PONTOS (use negativo para loss)</label>
+          <div class="pts-row">
+            <button class="pts-preset neg" onclick="setPts(-350)">-350</button>
+            <button class="pts-preset neg" onclick="setPts(-175)">-175</button>
+            <button class="pts-preset pos" onclick="setPts(175)">+175</button>
+            <button class="pts-preset pos" onclick="setPts(350)">+350</button>
+            <input class="pts-input" type="number" id="ltPts" placeholder="pts" oninput="updatePreview()">
+          </div>
+        </div>
+        <!-- ── NOVO: NÚMERO DE CONTRATOS ── -->
+        <div class="form-row"><label>NÚMERO DE CONTRATOS</label>
+          <div class="contratos-row">
+            <button class="ct-btn sel-c" id="c1" onclick="selContratos(1)">1</button>
+            <button class="ct-btn" id="c2" onclick="selContratos(2)">2</button>
+            <button class="ct-btn" id="c3" onclick="selContratos(3)">3</button>
+            <button class="ct-btn" id="c4" onclick="selContratos(4)">4</button>
+            <button class="ct-btn" id="c5" onclick="selContratos(5)">5</button>
+            <input class="pts-input" type="number" id="ltContratos" placeholder="qtd" min="1" value="1" oninput="syncContratosInput()">
+          </div>
+        </div>
+        <!-- ─────────────────────────────── -->
+        <div class="form-row"><label>OBSERVAÇÃO (opcional)</label>
+          <input type="text" id="ltObs" placeholder="Ex: entrei no fechamento..." style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:.75rem;padding:8px 10px;outline:none;width:100%;">
+        </div>
+        <div class="preview-box" id="ltPreview">Selecione o horário, direção e pontos para ver o preview...</div>
+        <button class="btn-registrar" id="btnRegistrar" onclick="registrarTrade()" disabled="">✅ REGISTRAR TRADE</button>
+        <button class="btn-desfazer" id="btnDesfazer" onclick="desfazerUltimo()">↩ DESFAZER ÚLTIMO TRADE</button>
+        <div class="alert-success" id="alertSuccess">✅ Trade registrado e salvo automaticamente!</div>
+      </div>
+      <div class="export-box">
+        <h3>📤 EXPORTAR &amp; COMPARTILHAR</h3>
+        <button class="btn-export" onclick="exportSnapshot()">📥 BAIXAR SNAPSHOT (privado + público)</button>
+        <button class="btn-clear" onclick="limparDados()">🗑 APAGAR TODOS OS TRADES NOVOS</button>
+        <div class="publish-steps">
+          <div style="font-size:.6rem;letter-spacing:3px;color:var(--muted);margin:14px 0 10px;">COMO PUBLICAR ONLINE (GRÁTIS)</div>
+          <div class="pub-step"><div class="pub-num">1</div><div class="pub-text">Clique em <strong>BAIXAR SNAPSHOT</strong> — vai gerar um arquivo HTML com todos os dados atuais.</div></div>
+          <div class="pub-step"><div class="pub-num">2</div><div class="pub-text">Acesse <a href="https://app.netlify.com/projects/brunaotradecontrol/overview" target="_blank">app.netlify.com/projects/brunaotradecontrol</a> no navegador.</div></div>
+          <div class="pub-step"><div class="pub-num">3</div><div class="pub-text">Vá na aba <strong>Deploys</strong> → role até o final → arraste o <strong>index.html</strong> na área de drop.</div></div>
+          <div class="pub-step"><div class="pub-num">4</div><div class="pub-text">Compartilhe o link com quem quiser. Para atualizar, repita o processo com um novo snapshot.</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">TRADES DESTA SESSÃO <span id="newCount" style="color:var(--green)">(21)</span></div>
+      <div id="newTradesLog"></div>
+      <div style="margin-top:20px;">
+        <div class="section-label">RESUMO DA SESSÃO</div>
+        <div class="cards cards-2">
+          <div class="card"><div class="cv red" id="sessaoResult" style="color:var(--muted)">-R$ 70.00</div><div class="cl">RESULTADO SESSÃO</div></div>
+          <div class="card"><div class="cv cyan" id="sessaoCap" style="color:var(--muted)">R$ 1.606</div><div class="cl">CAPITAL ATUAL</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script id="mainScript">
+const INITIAL_CAPITAL=1000,VALOR_PONTO=0.20,CDI_DIARIO=0.000528,SK_TRADES='tc_new_trades_v3',SK_JOURNAL='tc_journal_v3';
+const BASE_TRADES=/*BASE_START*/[{"n":1,"data":"27/05/2026","tipo":"C","hora":"09:15","pts":350,"rs":70,"cap":1000,"win":1,"obs":"","isNew":false},{"n":2,"data":"27/05/2026","tipo":"V","hora":"10:15","pts":350,"rs":70,"cap":1070,"win":1,"obs":"","isNew":false},{"n":3,"data":"27/05/2026","tipo":"C","hora":"11:30","pts":350,"rs":70,"cap":1140,"win":1,"obs":"","isNew":false},{"n":4,"data":"28/05/2026","tipo":"C","hora":"09:15","pts":350,"rs":70,"cap":1210,"win":1,"obs":"","isNew":false},{"n":5,"data":"28/05/2026","tipo":"V","hora":"10:15","pts":350,"rs":70,"cap":1280,"win":1,"obs":"","isNew":false},{"n":6,"data":"28/05/2026","tipo":"V","hora":"11:30","pts":-350,"rs":-70,"cap":1210,"win":0,"obs":"Entrei no fechamento","isNew":false},{"n":7,"data":"28/05/2026","tipo":"V","hora":"11:30","pts":350,"rs":70,"cap":1280,"win":1,"obs":"","isNew":false},{"n":8,"data":"29/05/2026","tipo":"V","hora":"09:15","pts":350,"rs":70,"cap":1350,"win":1,"obs":"Entrei no fechamento","isNew":false},{"n":9,"data":"29/05/2026","tipo":"V","hora":"10:15","pts":350,"rs":70,"cap":1420,"win":1,"obs":"Entrei no fechamento","isNew":false},{"n":10,"data":"29/05/2026","tipo":"C","hora":"11:30","pts":-350,"rs":-70,"cap":1350,"win":0,"obs":"","isNew":false},{"n":11,"data":"29/05/2026","tipo":"C","hora":"11:30","pts":350,"rs":70,"cap":1420,"win":1,"obs":"","isNew":false},{"n":12,"data":"01/06/2026","tipo":"V","hora":"09:15","pts":350,"rs":70,"cap":1490,"win":1,"obs":"","isNew":false},{"n":13,"data":"01/06/2026","tipo":"V","hora":"10:15","pts":350,"rs":70,"cap":1560,"win":1,"obs":"","isNew":false},{"n":14,"data":"01/06/2026","tipo":"V","hora":"11:30","pts":350,"rs":70,"cap":1630,"win":1,"obs":"entrei 70% da barra","isNew":false},{"n":15,"data":"01/06/2026","tipo":"V","hora":"11:30","pts":-350,"rs":-70,"cap":1560,"win":0,"obs":"","isNew":false},{"n":16,"data":"02/06/2026","tipo":"C","hora":"09:15","pts":-350,"rs":-70,"cap":1490,"win":0,"obs":"","isNew":false},{"n":17,"data":"02/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1420,"win":0,"obs":"","isNew":false},{"n":18,"data":"02/06/2026","tipo":"V","hora":"10:15","pts":-350,"rs":-70,"cap":1350,"win":0,"obs":"","isNew":false},{"n":19,"data":"02/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1420,"win":1,"obs":"","isNew":false},{"n":20,"data":"02/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1490,"win":1,"obs":"","isNew":false},{"n":21,"data":"02/06/2026","tipo":"C","hora":"11:30","pts":350,"rs":70,"cap":1560,"win":1,"obs":"","isNew":false},{"n":22,"data":"03/06/2026","tipo":"V","hora":"11:30","pts":350,"rs":70,"cap":1630,"win":1,"obs":"","isNew":false},{"n":23,"data":"05/06/2026","tipo":"V","hora":"09:15","pts":350,"rs":70,"cap":1700,"win":1,"obs":"","isNew":false},{"n":24,"data":"05/06/2026","tipo":"V","hora":"10:15","pts":-350,"rs":-70,"cap":1630,"win":0,"obs":"","isNew":false},{"n":25,"data":"05/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1560,"win":0,"obs":"","isNew":false},{"n":26,"data":"05/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1490,"win":0,"obs":"","isNew":false},{"n":27,"data":"05/06/2026","tipo":"C","hora":"11:30","pts":-350,"rs":-70,"cap":1420,"win":0,"obs":"","isNew":false},{"n":28,"data":"08/06/2026","tipo":"V","hora":"09:15","pts":350,"rs":70,"cap":1490,"win":1,"obs":"","isNew":false},{"n":29,"data":"08/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1560,"win":1,"obs":"","isNew":false},{"n":30,"data":"08/06/2026","tipo":"V","hora":"10:15","pts":-350,"rs":-70,"cap":1490,"win":0,"obs":"","isNew":false},{"n":31,"data":"08/06/2026","tipo":"C","hora":"11:30","pts":350,"rs":70,"cap":1560,"win":1,"obs":"","isNew":false},{"n":32,"data":"09/06/2026","tipo":"V","hora":"09:15","pts":-350,"rs":-70,"cap":1490,"win":0,"obs":"","isNew":false},{"n":33,"data":"09/06/2026","tipo":"V","hora":"10:15","pts":-350,"rs":-70,"cap":1420,"win":0,"obs":"","isNew":false},{"n":34,"data":"09/06/2026","tipo":"V","hora":"10:15","pts":350,"rs":70,"cap":1490,"win":1,"obs":"","isNew":false},{"n":35,"data":"09/06/2026","tipo":"V","hora":"10:15","pts":-350,"rs":-70,"cap":1420,"win":0,"obs":"","isNew":false},{"n":36,"data":"10/06/2026","tipo":"C","hora":"09:15","pts":350,"rs":70,"cap":1490,"win":1,"obs":"","isNew":false},{"n":37,"data":"10/06/2026","tipo":"V","hora":"10:15","pts":350,"rs":70,"cap":1560,"win":1,"obs":"","isNew":false},{"n":38,"data":"11/06/2026","tipo":"V","hora":"09:15","pts":350,"rs":70,"cap":1630,"win":1,"obs":"","isNew":false},{"n":39,"data":"11/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1700,"win":1,"obs":"","isNew":false},{"n":40,"data":"11/06/2026","tipo":"V","hora":"11:30","pts":-350,"rs":-70,"cap":1630,"win":0,"obs":"","isNew":false},{"n":41,"data":"11/06/2026","tipo":"C","hora":"11:30","pts":-350,"rs":-70,"cap":1560,"win":0,"obs":"","isNew":false},{"n":42,"data":"11/06/2026","tipo":"V","hora":"11:30","pts":65,"rs":13,"cap":1573,"win":1,"obs":"","isNew":false},{"n":43,"data":"12/06/2026","tipo":"V","hora":"09:15","pts":515,"rs":103,"cap":1676,"win":1,"obs":"","isNew":false},{"n":44,"data":"15/06/2026","tipo":"C","hora":"09:15","pts":350,"rs":70,"cap":1746,"win":1,"obs":"","isNew":false},{"n":45,"data":"15/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1816,"win":1,"obs":"","isNew":false},{"n":46,"data":"16/06/2026","tipo":"V","hora":"09:15","pts":-350,"rs":-70,"cap":1746,"win":0,"obs":"ENTREI NO ROMPIMENTO DA MINIMA","isNew":false},{"n":47,"data":"16/06/2026","tipo":"V","hora":"09:15","pts":350,"rs":70,"cap":1816,"win":1,"obs":"ENTREI NO ROMPIMENTO DA MINIMA","isNew":false},{"n":48,"data":"16/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1746,"win":0,"obs":"ROMPIMENTO DA MAXIMA","isNew":false},{"n":49,"data":"16/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1676,"win":0,"obs":"ROMPIMENTO DA BARRA DE 10:15","isNew":false},{"n":50,"data":"16/06/2026","tipo":"C","hora":"11:30","pts":-350,"rs":-70,"cap":1606,"win":0,"obs":"","isNew":false},{"n":51,"data":"17/06/2026","tipo":"C","hora":"09:15","pts":350,"rs":70,"cap":1676,"win":1,"obs":"rompimento de maxima","isNew":false},{"n":52,"data":"17/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1746,"win":1,"obs":"ENTREI ANTES DO TOQUE NA MAXIMA","isNew":false},{"n":53,"data":"18/06/2026","tipo":"V","hora":"10:15","pts":-350,"rs":-70,"cap":1676,"win":0,"obs":"","isNew":false},{"n":54,"data":"18/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1746,"win":1,"obs":"COMPRA NO ROMPIMENTO DA MAXIMA","isNew":false},{"n":55,"data":"18/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1816,"win":1,"obs":"ROMPIMENTO DA MAXIMA DO CANDLE DE 09:15","isNew":false},{"n":56,"data":"19/06/2026","tipo":"V","hora":"09:15","pts":-350,"rs":-70,"cap":1746,"win":0,"obs":"venda 09:15","isNew":false},{"n":57,"data":"19/06/2026","tipo":"C","hora":"09:15","pts":-350,"rs":-70,"cap":1676,"win":0,"obs":"2ªentrada rompeu maxima do candle de 09:15","isNew":false},{"n":58,"data":"19/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1606,"win":0,"obs":"rompimento do candle de 09:15","isNew":false},{"n":59,"data":"22/06/2026","tipo":"C","hora":"09:15","pts":350,"rs":70,"cap":1676,"win":1,"obs":"rompimento de maxima as 10:00","isNew":false},{"n":60,"data":"22/06/2026","tipo":"C","hora":"10:15","pts":350,"rs":70,"cap":1746,"win":1,"obs":"Rompimento de Máxima","isNew":false},{"n":61,"data":"22/06/2026","tipo":"C","hora":"11:30","pts":-350,"rs":-70,"cap":1676,"win":0,"obs":"ROMPIMENTO DA MAXIMA DE 11:15","isNew":false},{"n":62,"data":"22/06/2026","tipo":"C","hora":"11:30","pts":350,"rs":70,"cap":1746,"win":1,"obs":"Compra no rompimento de 11:30","isNew":false},{"n":63,"data":"23/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1676,"win":0,"obs":"COMPRA NO ROMPIMENTO DE MAXIMA","isNew":false},{"n":64,"data":"23/06/2026","tipo":"C","hora":"10:15","pts":-350,"rs":-70,"cap":1606,"win":0,"obs":"","isNew":false}]/*BASE_END*/;
+let trades=[...BASE_TRADES],newTrades=/*NEWTR_START*/[]/*NEWTR_END*/,journalData=/*JOURN_START*/[{"id":1782304980000,"data":"2026-06-24","sessao":"pos","titulo":"compra no Rompimento de maxima","texto":"Entrada respeitando o sistema, gain de 350 pontos","licoes":"RESPEITAR o setup, estrategia com boa probabilidade","mood":"😊 Calmo"},{"id":1782304620000,"data":"2026-06-24","sessao":"pos","titulo":"Venda no fechamento","texto":"Entrei no fechamento do candle, preço foi proximo do alvo 3 vezes , chegando a fazer 300 pontos e voltava, quando o Ibov abriu preço foi no alvo, 350 de gain.","licoes":"Respeitar o sistema, a estatistica do horario esta a nosso favor, trade de 09:15, alta probabilidade de ganhos","mood":"😤 Ansioso"},{"id":1782221041280,"data":"2026-06-23","sessao":"neg","titulo":"ENTRADA NO ROMPIMENTO DA MAXIMA","texto":"LOSS NO ROMPIMENTO DA MAXIMA NOVAMENTE, 350 PONTOS","licoes":"MERCADO NAO ESTA BOM PARA A ESTRATEGIA","mood":"😊 Calmo"},{"id":1782220991976,"data":"2026-06-23","sessao":"neg","titulo":"ENTRADA NO ROMPIMENTO DE 10:15","texto":"ENTRADA NO ROMPIMENTO DA MAXIMA, LOSS DE 350","licoes":"LOSS DENTRO DO SISTEMA FAZ PARTE","mood":"😊 Calmo"},{"id":1782140377439,"data":"2026-06-22","sessao":"pos","titulo":"Compra no rompimento de 11:30","texto":"Ultimo trade do dia , um loss, se houver mais um eu paro, a estatistica para esse horario é fraca,deu gain 350 pontos, 4 trades, 1 loss, conta bloqueada pelo limite de trades.","licoes":"horario de 11 horas e perigoso, poucos gains","mood":"💪 Confiante"},{"id":1782138924694,"data":"2026-06-22","sessao":"neg","titulo":"ROMPIMENTO DO candle de 11:15","texto":"candle ruim de se operar ,baixo indice estatistico,tenho precebido que esse horario o mercado consolida . loss de 350 pontos","licoes":"Nao operar as 11 horas, baixo indice de acerto","mood":"😤 Ansioso"},{"id":1782134609463,"data":"2026-06-22","sessao":"pos","titulo":"rompimento de maxima","texto":"2ªentrada as !0:15, esse candle veio com muita força e esta em pontos de resistencia, mas pelça velocidade em que ele formou novos topos eu entrei respeitando o sistema, no rompimento da maxima dele, chegou fazer 311 pontos e começou a recuar, demorou um pouco mas deu gain, 350 pontos","licoes":"respeitar o setup.","mood":"😤 Ansioso"},{"id":1782133482860,"data":"2026-06-22","sessao":"pos","titulo":"Compra no rompimento de máxima","texto":"!ª entrada as 10:00 após rompimento de máxima do candle de sinal de 09:15, gain de 350 pontos.","licoes":"respeitar o sinal de entrada e o numero de pontos de meta.","mood":"😊 Calmo"},{"id":1781875978068,"data":"2026-06-19","sessao":"neg","titulo":"entrada errada","texto":"entrei as 10:15 porem no rompimento do candle de 09:15, mercado lateral, 3 losses seguidos, conta bloqueda, semana ruim para o sistema","licoes":"respeitar o loss e operar sem ansiedade e nao quebrar regras para nao quebrar a conta","mood":"😤 Ansioso"},{"id":1781875024759,"data":"2026-06-19","sessao":"neg","titulo":"2ªentrada","texto":"2ªentrada ,preço rompeu maxima do candle de 09:15 as 09:12, entrei comprado,loss de 350 pontos.","licoes":"semana ruim.","mood":"😊 Calmo"},{"id":1781873913652,"data":"2026-06-19","sessao":"neg","titulo":"entrada no sistema","texto":"Vendi respeitando o sistema no entanto foi loss, mercado andou 150 pontos e voltou, a semana nao esta boa.","licoes":"loss fas parte do sistema","mood":"😊 Calmo"},{"id":1781790701497,"data":"2026-06-18","sessao":"pos","titulo":"ROMPIMENTO DO CANDLE DE 09:15 DEPOIS DAS 10:30","texto":"MERCAADO GANHOU FORÇA E ENTREI ALGUNS MINUTOS APOS A ENTRADA DO ROMPIMENTO DO CANDLE DE 10:15, GAIN DE 350 PONTOS","licoes":"FOI UM TRADE DE RISCO MAS DEU CERTO.","mood":"😤 Ansioso"},{"id":1781790443242,"data":"2026-06-18","sessao":"pos","titulo":"COMPRA NO CANDLE DE 10:15","texto":"SEGUNDA ENTRADA NO ROMPIMENTO DA MAXIMA DO CANDLE DE 10:15,GAIN DE 350","licoes":"RESPEITEI O SETUP","mood":"😊 Calmo"},{"id":1781789355679,"data":"2026-06-18","sessao":"neg","titulo":"VENDA 10:15","texto":"MERCADO NAO DEU ENTRADA AS 09:15, SENDO FEITO PRIMEIRO TRADE DO DIA AS 10:15, CANDLE DE DUVIDA MAS RESPEITEI O SISTEMA E ENTREI VENDIDO,MERCADO FEZ 120 PONTOS E VOLTOU E ESTOPOU, LOSS DE 350 PONTOS","licoes":"LOSS FAZ PARTE, OBERVAR ENTRADAS QUANDO CANDLE FOR UM DOJI","mood":"😊 Calmo"},{"id":1781702704484,"data":"2026-06-17","sessao":"pos","titulo":"ENTREI ANTES DO TOQUE","texto":"ENTREI NA COMPRA ANTES DE TOQUE, POR ACREDITAR NA RESISTENCIA DO DIA 15 DE MAIO, O CANDLE DE SINAL TBM FOI UM DOJI, GAIN DE 350 PONTOS POREM O TRADE FEITO NO PONTO CERTO TERIA DADO GAIN","licoes":"FUI ANSIOSO NESSA ENTRADA, TEM QUE RESPEITAR O SISTEMA","mood":"😤 Ansioso"},{"id":1781700763404,"data":"2026-06-17","sessao":"pos","titulo":"rompimento de maxima","texto":"1ª entrada respeitando o sistema, mercado abril com grande gap de alta mas respeitei o sistema, o candle de sinal foi um doji. trade de 30 minutos, gain de 350 pontos","licoes":"Paciência gera lucros","mood":"😊 Calmo"},{"id":1781620076946,"data":"2026-06-16","sessao":"neg","titulo":"ENTRADA NA COMPRA DA BARRA DE 11:15","texto":"ENTRADA DENTRO DO SISTEMA MAS TOMEI LOSS","licoes":"DIA NAO FOI BOM PARA A ESTRATEGIA","mood":"😊 Calmo"},{"id":1781620023177,"data":"2026-06-16","sessao":"neg","titulo":"COMPRA DE ROMPIMENTO NOVAMENTE","texto":"TRADE DENTRO DA ESTRATEGIA, LOSS DE 250 PONTOS","licoes":"HJ O DIA NAO FOI FAVORÁVEL A ESTRATEGIA","mood":"😊 Calmo"},{"id":1781618337769,"data":"2026-06-16","sessao":"neg","titulo":"COMPRA","texto":"COMPREI O ROMPIMENTO DA MAXIMA DA BARRA DE 10:15, MERCADO BUSCOU A MEDIA E VOLTOU, CHEGOU FAZER 250 PONTOS E VOLTOU TUDO E MES ESTOPOU.","licoes":"LOSS FAZ PARTE","mood":"😊 Calmo"},{"id":1781615229133,"data":"2026-06-16","sessao":"pos","titulo":"VENDA DE ROMPIMENTO DE MINIMA, SEGUNDA TENTATIVA NO MESMO PONTO","texto":"MERCADO VOLTOU AO PONTO ,ENTREI NOVAMENTE RESPEITANDO O SISTEMA, GAIN DE 350 PONTOS.","licoes":"CALMA E AGUARDAR O PONTO DE ENTRADA","mood":"😊 Calmo"},{"id":1781615150784,"data":"2026-06-16","sessao":"neg","titulo":"VENDA DE ROMPIMENTO","texto":"ENTREI RESPEITANDO O SISTEMA,ROMPIMENTO DA MINIMA, LOSS DE 350 PONTOS, NORMAL, FAZ PARTE DO PROCESSO.","licoes":"FEZ PARTE DO PROCESSO TOMAR LOSS, MANTER A CALMA E ESPERAR A PROXIMA ENTRADA.","mood":"😊 Calmo"},{"id":1781530071132,"data":"2026-06-15","sessao":"pos","titulo":"2ªENTRADA DO DIA","texto":"2ªENTRADA DO DIA, CANDLE VERMELHO POREM A FORÇA ESTA COMPRADORA E ROMPEU A MAXIMA DO CANDLE INDICADOR, FEITA A COMPRA RESPEITANDO O SETUP, GAIN DE 350 PONTOS.","licoes":"RESPEITAR A ESTRATEGIA SEMPRE E MANTER A CALMA PQ OS DADOS SOBRE O SETUP SAO POSITIVOS.","mood":"😊 Calmo"},{"id":1781526566147,"data":"2026-06-15","sessao":"pos","titulo":"entrada dentro obedecendo a estrategia","texto":"1ª entrada as 09:15 dentro da estratégia, seguindo o plano. gain de 350","licoes":"","mood":"😤 Ansioso"}]/*JOURN_END*/;
+function saveToStorage(){try{localStorage.setItem(SK_TRADES,JSON.stringify(newTrades));localStorage.setItem(SK_JOURNAL,JSON.stringify(journalData));setSaveIndicator(true);}catch(e){setSaveIndicator(false,'erro');}}
+function loadFromStorage(){try{const nt=localStorage.getItem(SK_TRADES);if(nt){const p=JSON.parse(nt);const existingNs=new Set(trades.map(t=>t.n));p.forEach(t=>{if(!existingNs.has(t.n)){trades.push({...t});newTrades.push({...t});existingNs.add(t.n);}});}const jd=localStorage.getItem(SK_JOURNAL);if(jd)journalData=JSON.parse(jd);setSaveIndicator(true,newTrades.length>0?`${trades.length} trades · ${newTrades.length} novos salvos`:`${trades.length} trades carregados`);}catch(e){setSaveIndicator(false,'erro');}}
+function setSaveIndicator(ok,msg){const d=document.getElementById('saveDot'),l=document.getElementById('saveLabel');if(!d||!l)return;d.className='save-dot '+(ok?'saved':'');l.textContent=msg||(ok?'dados salvos automaticamente':'erro');}
+function exportSnapshot(){
+  const allTrades=trades.map(t=>({...t,isNew:false}));
+  const today=new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  const scriptEl=document.getElementById('mainScript');if(!scriptEl)return;
+  let src=scriptEl.textContent;
+  src=src.replace(/\/\*BASE_START\*\/[\s\S]*?\/\*BASE_END\*\//,`/*BASE_START*/${JSON.stringify(allTrades)}/*BASE_END*/`);
+  src=src.replace(/\/\*NEWTR_START\*\/[\s\S]*?\/\*NEWTR_END\*\//,'/*NEWTR_START*/[]/*NEWTR_END*/');
+  src=src.replace(/\/\*JOURN_START\*\/[\s\S]*?\/\*JOURN_END\*\//,`/*JOURN_START*/${JSON.stringify(journalData)}/*JOURN_END*/`);
+  const styles=Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  const bc=document.body.cloneNode(true);bc.querySelectorAll('script').forEach(s=>s.remove());
+  ['tradesBody','diarioContent','journalEntries','horCards','horBody','newTradesLog'].forEach(id=>{const el=bc.querySelector('#'+id);if(el)el.innerHTML='';});
+  bc.querySelectorAll('canvas').forEach(c=>{const nc=document.createElement('canvas');nc.id=c.id;c.replaceWith(nc);});
+  const bodyHtml=bc.innerHTML;
+  const mkHtml=(title,extraCss,script)=>`<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>${title}</title>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>\n<style>${styles}${extraCss}<\/style>\n<\/head>\n<body>\n${bodyHtml}\n<script id="mainScript">${script}<\/script>\n<\/body>\n<\/html>`;
+  const dlFile=(content,name)=>{const b=new Blob([content],{type:'text/html;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);};
+  dlFile(mkHtml(`TRADER CONTROL — ${today}`,'',src),`trader_control_${today}.html`);
+  setTimeout(()=>{
+    const pubCss=`\n/* VISUALIZACAO PUBLICA — SOMENTE LEITURA */\n.tab.lancar-tab{display:none!important}#tab-lancar{display:none!important}.journal-form{display:none!important}.edit-hint{display:none!important}.save-indicator{display:none!important}.entry-delete{display:none!important}[contenteditable]{pointer-events:none!important;cursor:default!important;background:transparent!important;outline:none!important;box-shadow:none!important}`;
+    let pubSrc=src;
+    pubSrc=pubSrc.replace("document.getElementById('ltPts').addEventListener('input',updatePreview);document.getElementById('ltData').addEventListener('input',updatePreview);","if(document.getElementById('ltPts')){document.getElementById('ltPts').addEventListener('input',updatePreview);}if(document.getElementById('ltData')){document.getElementById('ltData').addEventListener('input',updatePreview);}");
+    pubSrc=pubSrc.replace("if(newTrades.length>0){document.getElementById('btnDesfazer').disabled=false;renderNewTradesLog();renderJournal();}","renderJournal();");
+    pubSrc+=`\n(function(){const brand=document.querySelector('.brand');if(brand){const p=document.createElement('p');p.style.cssText='font-size:.55rem;letter-spacing:3px;color:#00ff88;margin-top:4px;border:1px solid #00ff8444;padding:2px 6px;display:inline-block';p.textContent='● VISUALIZAÇÃO PÚBLICA';brand.appendChild(p);}})();`;
+    let pubHtml=mkHtml('TRADER CONTROL — brunotradecontrol',pubCss,pubSrc);
+    pubHtml=pubHtml.replace('<div class="section-label">NOVA ENTRADA</div>','<div class="section-label" style="display:none">NOVA ENTRADA</div>');
+    dlFile(pubHtml,'index.html');
+  },700);
+}
+function limparDados(){if(!confirm(`Apagar os ${newTrades.length} trades novos?`))return;trades=BASE_TRADES.map(t=>({...t}));newTrades=[];try{localStorage.removeItem(SK_TRADES);}catch(e){}document.getElementById('btnDesfazer').disabled=true;renderNewTradesLog();updateDashboard();setSaveIndicator(true,'dados limpos');}
+function calcIndicators(){
+  const all=trades,n=all.length,wins=all.filter(t=>t.win).length,totalRs=all.reduce((s,t)=>s+t.rs,0),lastCap=all[n-1].cap;
+  const rets=all.map((t,i)=>t.rs/(i===0?INITIAL_CAPITAL:all[i-1].cap));
+  const meanRet=rets.reduce((s,r)=>s+r,0)/n,variance=rets.reduce((s,r)=>s+(r-meanRet)**2,0)/n,stdDev=Math.sqrt(variance);
+  const sharpe=stdDev>0?(meanRet-CDI_DIARIO)/stdDev:0;
+  const downsideVar=rets.reduce((s,r)=>s+(r<0?r**2:0),0)/n,sortino=Math.sqrt(downsideVar)>0?(meanRet-CDI_DIARIO)/Math.sqrt(downsideVar):0;
+  let maxCap=INITIAL_CAPITAL,maxDD=0,ddAtual=0;
+  all.forEach((t,i)=>{if(t.cap>maxCap)maxCap=t.cap;const dd=(t.cap-maxCap)/maxCap*100;if(dd<maxDD)maxDD=dd;if(i===n-1)ddAtual=dd;});
+  const tg=all.filter(t=>t.pts>0).reduce((s,t)=>s+t.rs,0),tl=Math.abs(all.filter(t=>t.pts<0).reduce((s,t)=>s+t.rs,0)),pf=tl>0?tg/tl:tg;
+  const hors={'09:15':{t:0,w:0,l:0,g:0,lo:0,grs:0,lors:0},'10:15':{t:0,w:0,l:0,g:0,lo:0,grs:0,lors:0},'11:30':{t:0,w:0,l:0,g:0,lo:0,grs:0,lors:0}};
+  all.forEach(t=>{const h=hors[t.hora];if(!h)return;h.t++;if(t.win){h.w++;h.g+=t.pts;h.grs+=t.rs;}else{h.l++;h.lo+=t.pts;h.lors+=t.rs;}});
+  const todayData=all[n-1].data,hojeTs=all.filter(t=>t.data===todayData);
+  return{n,wins,losses:n-wins,winRate:wins/n*100,totalRs,retTotal:totalRs/INITIAL_CAPITAL*100,lastCap,stdDev,sharpe,sortino,maxDD,ddAtual,pf,ev:totalRs/n,maiorGain:Math.max(...all.map(t=>t.pts)),maiorLoss:Math.min(...all.map(t=>t.pts)),hors,hojeTs,hojeWins:hojeTs.filter(t=>t.win).length,hojePts:hojeTs.reduce((s,t)=>s+t.pts,0),hojeRs:hojeTs.reduce((s,t)=>s+t.rs,0),hojeCap:hojeTs[hojeTs.length-1].cap,todayData};
+}
+const fmt=(n,d=2)=>n.toFixed(d).replace('.',','),fmtPts=n=>(n>0?'+':'')+n,fmtRs=n=>(n>=0?'+R$ ':'-R$ ')+Math.abs(n).toFixed(2),fmtPct=n=>(n>=0?'+':'')+fmt(n)+'%',cc=v=>v>=0?'green':'red';
+function setText(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+function setClass(id,cls){const e=document.getElementById(id);if(!e)return;e.classList.remove('green','red','cyan','yellow','white','orange');e.classList.add(cls);}
+function updateDashboard(){
+  const d=calcIndicators();
+  setText('hWinRate',fmt(d.winRate,1)+'%');setText('hRetorno',fmt(d.retTotal,1)+'%');setText('hSharpe',fmt(d.sharpe,4));setText('hResultado',(d.totalRs>=0?'R$ ':'-R$ ')+fmt(Math.abs(d.totalRs)));
+  setText('pResultado',(d.totalRs>=0?'R$ ':'-R$ ')+fmt(Math.abs(d.totalRs)));setClass('pResultado',cc(d.totalRs));
+  setText('pWinRate',fmt(d.winRate,1)+'%');setText('pSharpe',fmt(d.sharpe,4));setText('pTrades',d.n);setText('pWins',d.wins);setText('pLosses',d.losses);
+  setText('pRetorno',fmtPct(d.retTotal));setClass('pRetorno',cc(d.retTotal));setText('pDD',fmt(d.maxDD)+'%');
+  setText('pSortino',fmt(d.sortino,4));setText('mcSortino',fmt(d.sortino,4));setText('pPF',fmt(d.pf,2)+'x');setText('pEV',fmt(d.ev/VALOR_PONTO,1)+' pts');setText('pStd',fmt(d.stdDev*100,2)+'%');
+  setText('pMaiorGain',d.maiorGain+' pts');setText('pMaiorLoss',d.maiorLoss+' pts');setText('pCapital','R$ '+d.lastCap.toLocaleString('pt-BR'));
+  setText('tTotal',d.n);setText('pDD2',fmt(d.maxDD)+'%');setText('pDDAtual',fmt(d.ddAtual)+'%');setClass('pDDAtual',d.ddAtual<-0.01?'red':'green');
+  const[dia,mes,ano]=d.todayData.split('/');const dobj=new Date(ano,mes-1,dia);
+  const dias=['DOMINGO','SEGUNDA-FEIRA','TERÇA-FEIRA','QUARTA-FEIRA','QUINTA-FEIRA','SEXTA-FEIRA','SÁBADO'];
+  setText('hojeDate',`${d.todayData} — ${dias[dobj.getDay()]}`);
+  setText('hojeTrades',d.hojeTs.length);setText('hojeWins',d.hojeWins);setText('hojeLosses',d.hojeTs.length-d.hojeWins);
+  setText('hojeWR',d.hojeTs.length>0?fmt(d.hojeWins/d.hojeTs.length*100,1)+'%':'—');
+  setText('hojePts',fmtPts(d.hojePts)+' pts');setClass('hojePts',cc(d.hojePts));setText('hojeRs',fmtRs(d.hojeRs));setClass('hojeRs',cc(d.hojeRs));setText('hojeCap','R$ '+d.hojeCap.toLocaleString('pt-BR'));
+  renderHojeTable(d.hojeTs);renderHorarios(d.hors);renderTradesTable();renderDiarioLog();updateCharts();
+}
+function renderTradesTable(){
+  const tbody=document.getElementById('tradesBody');if(!tbody)return;
+  tbody.innerHTML=trades.map((t,i)=>{const w=t.win===1,prev=i===0?INITIAL_CAPITAL:trades[i-1].cap,ret=t.rs/prev*100,wrRun=trades.slice(0,i+1).filter(x=>x.win).length/(i+1)*100;let mx=INITIAL_CAPITAL;for(let j=0;j<=i;j++){if(trades[j].cap>mx)mx=trades[j].cap;}const dd=(t.cap-mx)/mx*100;
+  return`<tr class="${t.isNew?'new-row':''}"><td style="color:var(--muted)">${t.n}</td><td>${t.data}</td><td><span class="badge ${t.tipo==='C'?'c':'v'}">${t.tipo}</span></td><td>${t.hora}</td><td class="${w?'win-txt':'loss-txt'}">${fmtPts(t.pts)}</td><td class="${w?'win-txt':'loss-txt'}">${fmtRs(t.rs)}</td><td>R$ ${t.cap.toLocaleString('pt-BR')}</td><td class="${w?'win-txt':'loss-txt'}">${fmtPct(ret)}</td><td>${fmt(wrRun,1)}%</td><td class="${dd<0?'loss-txt':''}">${dd===0?'0,00%':fmt(dd)+'%'}</td><td style="color:var(--muted);font-size:.65rem">${t.obs||''}</td></tr>`;}).join('');
+}
+function renderHojeTable(ht){const tbody=document.getElementById('hojeBody');if(!tbody)return;tbody.innerHTML=ht.map(t=>`<tr><td>${t.n}</td><td><span class="badge ${t.tipo==='C'?'c':'v'}">${t.tipo}</span></td><td>${t.hora}</td><td class="${t.win?'win-txt':'loss-txt'}">${fmtPts(t.pts)}</td><td class="${t.win?'win-txt':'loss-txt'}">${fmtRs(t.rs)}</td><td>R$ ${t.cap.toLocaleString('pt-BR')}</td><td><span class="badge ${t.win?'w':'l'}">${t.win?'WIN':'LOSS'}</span></td><td style="color:var(--muted);font-size:.65rem">${t.obs||''}</td></tr>`).join('');}
+function renderHorarios(hors){
+  const sorted=Object.entries(hors).map(([h,s])=>({hora:h,...s,liq:s.grs+s.lors,wr:s.t>0?s.w/s.t*100:0})).sort((a,b)=>b.liq-a.liq);
+  const cls=['best','mid','worst'],lbl=['MELHOR HORÁRIO','INTERMEDIÁRIO','PIOR HORÁRIO'];
+  const ce=document.getElementById('horCards');if(ce)ce.innerHTML=sorted.map((h,i)=>`<div class="hor-card ${cls[i]}"><div class="ht">${lbl[i]}</div><div class="htime">${h.hora}</div><div class="hsub">${fmt(h.wr,1)}% Win Rate</div><div style="margin-top:12px;font-size:1rem;color:${h.liq>=0?'var(--green)':'var(--red)'};font-weight:700;">${h.liq>=0?'+':'-'}R$ ${Math.abs(h.liq).toFixed(2)}</div><div style="font-size:.58rem;color:var(--muted);margin-top:4px;">${h.t} trades · ${h.w}W / ${h.l}L · ${fmtPts(h.g+h.lo)} pts</div></div>`).join('');
+  const tb=document.getElementById('horBody');if(!tb)return;const tot={t:0,w:0,l:0,g:0,lo:0,liq:0};let rows='';
+  sorted.forEach((h,i)=>{tot.t+=h.t;tot.w+=h.w;tot.l+=h.l;tot.g+=h.g;tot.lo+=h.lo;tot.liq+=h.liq;rows+=`<tr><td style="color:${i===0?'var(--green)':'var(--orange)'};font-weight:${i===0?700:400}">${h.hora}${i===0?' ⭐':''}</td><td>${h.t}</td><td class="win-txt">${h.w}</td><td class="loss-txt">${h.l}</td><td class="${h.wr>=60?'win-txt':'loss-txt'}">${fmt(h.wr,1)}%</td><td class="win-txt">+${h.g}</td><td class="loss-txt">${h.lo}</td><td class="win-txt">+${h.g+h.lo}</td><td class="${h.liq>=0?'win-txt':'loss-txt'}">${h.liq>=0?'+R$ ':'-R$ '}${Math.abs(h.liq).toFixed(2)}</td></tr>`;});
+  rows+=`<tr style="background:#1a1a1a;font-weight:700"><td style="color:var(--muted)">TOTAL</td><td>${tot.t}</td><td class="win-txt">${tot.w}</td><td class="loss-txt">${tot.l}</td><td class="win-txt">${fmt(tot.t>0?tot.w/tot.t*100:0,1)}%</td><td class="win-txt">+${tot.g}</td><td class="loss-txt">${tot.lo}</td><td class="win-txt">+${tot.g+tot.lo}</td><td class="${tot.liq>=0?'win-txt':'loss-txt'}">${tot.liq>=0?'+R$ ':'-R$ '}${Math.abs(tot.liq).toFixed(2)}</td></tr>`;
+  tb.innerHTML=rows;if(chartHorarios){chartHorarios.data.labels=sorted.map(h=>h.hora);chartHorarios.data.datasets[0].data=sorted.map(h=>h.wr);chartHorarios.data.datasets[1].data=sorted.map(h=>h.liq);chartHorarios.update();}
+}
+function renderDiarioLog(){const el=document.getElementById('diarioContent');if(!el)return;const byDate={};trades.forEach(t=>{if(!byDate[t.data])byDate[t.data]=[];byDate[t.data].push(t);});el.innerHTML=Object.entries(byDate).reverse().map(([date,ts])=>{const wins=ts.filter(t=>t.win).length,net=ts.reduce((a,t)=>a+t.rs,0),netPts=ts.reduce((a,t)=>a+t.pts,0),obs=ts.filter(t=>t.obs).map(t=>`${t.hora}: "${t.obs}"`).join(' | ');return`<div class="diario-entry"><div class="diario-date">${date} — ${wins}W/${ts.length-wins}L — ${fmtPts(netPts)} pts — ${fmtRs(net)}</div><div class="diario-trades">${ts.map(t=>`<span class="diario-trade ${t.win?'g':'l'}">${t.hora} ${t.tipo} ${fmtPts(t.pts)}pts</span>`).join('')}</div>${obs?`<div style="font-size:.65rem;color:var(--orange);margin-top:8px;font-style:italic;">📝 ${obs}</div>`:''}</div>`;}).join('');}
+let chartCapital=null,chartHorarios=null;
+function initCharts(){
+  chartCapital=new Chart(document.getElementById('capitalChart').getContext('2d'),{type:'line',data:{labels:trades.map(t=>`#${t.n}`),datasets:[{data:trades.map(t=>t.cap),borderColor:'#00ff88',backgroundColor:'rgba(0,255,136,0.06)',borderWidth:2,pointRadius:3,pointBackgroundColor:trades.map(t=>t.win?'#00ff88':'#ff3b3b'),tension:0.2,fill:true}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Capital: R$ ${ctx.raw.toLocaleString('pt-BR')}`,title:ctx=>{const t=trades[ctx[0].dataIndex];return t?`Trade ${t.n} — ${t.data} ${t.hora}`:'';}}}},scales:{x:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'Courier New',size:9},maxTicksLimit:15}},y:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'Courier New',size:10},callback:v=>'R$'+v}}}}});
+  chartHorarios=new Chart(document.getElementById('horariosChart').getContext('2d'),{type:'bar',data:{labels:['09:15','10:15','11:30'],datasets:[{label:'Win Rate %',data:[0,0,0],backgroundColor:['#00ff8844','#ff8c0044','#ff8c0044'],borderColor:['#00ff88','#ff8c00','#ff8c00'],borderWidth:2,yAxisID:'y'},{label:'Líquido R$',data:[0,0,0],backgroundColor:'#00d4ff22',borderColor:'#00d4ff',borderWidth:2,type:'line',yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:true,labels:{color:'#555',font:{family:'Courier New',size:10}}}},scales:{x:{grid:{color:'#1a1a1a'},ticks:{color:'#aaa',font:{family:'Courier New',size:11}}},y:{position:'left',grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'Courier New',size:10},callback:v=>v+'%'}},y2:{position:'right',grid:{display:false},ticks:{color:'#555',font:{family:'Courier New',size:10},callback:v=>'R$'+v}}}}});
+  const bins=['< 800','800-1k','1k-1.1k','1.1-1.2k','1.2-1.3k','1.3-1.4k','1.4-1.5k','1.5-1.6k','1.6-1.7k','1.7-1.8k','1.8-1.9k','1.9-2k','2-2.2k','2.2-2.4k','> 2.4k'],cnts=[18,42,65,120,185,280,420,650,980,1420,1380,1050,1200,960,1230],tot=cnts.reduce((a,b)=>a+b,0);
+  new Chart(document.getElementById('mcChart').getContext('2d'),{type:'bar',data:{labels:bins,datasets:[{data:cnts,backgroundColor:cnts.map((_,i)=>i<=1?'#ff3b3b88':i<=3?'#ff8c0088':'#00ff8888'),borderColor:cnts.map((_,i)=>i<=1?'#ff3b3b':i<=3?'#ff8c00':'#00ff88'),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw} simulações (${(ctx.raw/tot*100).toFixed(1)}%)`}}},scales:{x:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'Courier New',size:9},maxRotation:45}},y:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'Courier New',size:10}}}}}});
+}
+function updateCharts(){if(!chartCapital)return;chartCapital.data.labels=trades.map(t=>`#${t.n}`);chartCapital.data.datasets[0].data=trades.map(t=>t.cap);chartCapital.data.datasets[0].pointBackgroundColor=trades.map(t=>t.win?'#00ff88':'#ff3b3b');chartCapital.update();}
+
+/* ── CONTROLES DO FORMULÁRIO ── */
+let ltHora='',ltTipo='',ltContratos=1;
+
+function selHora(h){ltHora=h;['h0915','h1015','h1130'].forEach(id=>document.getElementById(id).classList.remove('sel'));const m={'09:15':'h0915','10:15':'h1015','11:30':'h1130'};document.getElementById(m[h]).classList.add('sel');updatePreview();}
+function selTipo(t){ltTipo=t;document.getElementById('tC').classList.remove('sel','sel-c','sel-v');document.getElementById('tV').classList.remove('sel','sel-c','sel-v');document.getElementById(t==='C'?'tC':'tV').classList.add('sel',t==='C'?'sel-c':'sel-v');updatePreview();}
+function setPts(v){document.getElementById('ltPts').value=v;updatePreview();}
+
+/* ── NOVO: seleção de contratos ── */
+function selContratos(n){
+  ltContratos=n;
+  [1,2,3,4,5].forEach(i=>{
+    const el=document.getElementById('c'+i);
+    if(el)el.classList.toggle('sel-c',i===n);
+  });
+  const inp=document.getElementById('ltContratos');
+  if(inp)inp.value=n;
+  updatePreview();
+}
+function syncContratosInput(){
+  const v=parseInt(document.getElementById('ltContratos').value)||1;
+  ltContratos=v;
+  [1,2,3,4,5].forEach(i=>{
+    const el=document.getElementById('c'+i);
+    if(el)el.classList.toggle('sel-c',i===v);
+  });
+  updatePreview();
+}
+/* ─────────────────────────────── */
+
+function updatePreview(){
+  const pts=parseInt(document.getElementById('ltPts').value)||0,
+        data=document.getElementById('ltData').value,
+        contratos=parseInt(document.getElementById('ltContratos').value)||1,
+        prev=document.getElementById('ltPreview'),
+        btn=document.getElementById('btnRegistrar');
+  if(!ltHora||!ltTipo||!pts||!data){prev.className='preview-box';prev.textContent='Selecione o horário, direção e pontos para ver o preview...';btn.disabled=true;return;}
+  const rs=pts*VALOR_PONTO*contratos,lastCap=trades[trades.length-1].cap,newCap=lastCap+rs;
+  const[y,m,d]=data.split('-');
+  prev.className='preview-box ready';
+  prev.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div style="font-size:.58rem;letter-spacing:2px;color:var(--muted);margin-bottom:4px">PREVIEW #${trades.length+1}</div>
+      <div style="font-size:.8rem;margin-bottom:8px">${d}/${m}/${y} · ${ltTipo==='C'?'📈 COMPRA':'📉 VENDA'} · ${ltHora}</div>
+      <div class="pv ${pts>0?'green':'red'}">${fmtPts(pts)} pts &nbsp; ${fmtRs(rs)}</div>
+      ${contratos>1?`<div style="font-size:.62rem;color:var(--cyan);margin-top:5px">${contratos} contratos × ${Math.abs(pts)} pts × R$${VALOR_PONTO} = ${fmtRs(rs)}</div>`:''}
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:.58rem;color:var(--muted);margin-bottom:4px">CAPITAL</div>
+      <div style="font-size:.85rem">R$ ${lastCap.toLocaleString('pt-BR')}</div>
+      <div style="font-size:.7rem;color:var(--muted)">↓</div>
+      <div style="font-size:1rem;font-weight:700;color:${newCap>=lastCap?'var(--green)':'var(--red)'}">R$ ${newCap.toLocaleString('pt-BR')}</div>
+    </div>
+  </div>`;
+  btn.disabled=false;
+}
+
+function registrarTrade(){
+  const pts=parseInt(document.getElementById('ltPts').value)||0,
+        data=document.getElementById('ltData').value,
+        obs=document.getElementById('ltObs').value.trim(),
+        contratos=parseInt(document.getElementById('ltContratos').value)||1;
+  if(!ltHora||!ltTipo||!pts||!data){alert('Preencha todos os campos.');return;}
+  const[y,m,d]=data.split('-'),
+        rs=Math.round(pts*VALOR_PONTO*contratos*100)/100,
+        lastCap=trades[trades.length-1].cap,
+        newCap=Math.round((lastCap+rs)*100)/100;
+  const t={n:trades.length+1,data:`${d}/${m}/${y}`,tipo:ltTipo,hora:ltHora,pts,rs,cap:newCap,win:pts>0?1:0,obs,contratos,isNew:true};
+  trades.push(t);newTrades.push(t);
+  // reset campos
+  document.getElementById('ltPts').value='';
+  document.getElementById('ltObs').value='';
+  ['h0915','h1015','h1130'].forEach(id=>document.getElementById(id).classList.remove('sel'));
+  document.getElementById('tC').classList.remove('sel','sel-c','sel-v');
+  document.getElementById('tV').classList.remove('sel','sel-c','sel-v');
+  ltHora='';ltTipo='';
+  // reset contratos para 1
+  ltContratos=1;
+  document.getElementById('ltContratos').value=1;
+  [1,2,3,4,5].forEach(i=>{const el=document.getElementById('c'+i);if(el)el.classList.toggle('sel-c',i===1);});
+  document.getElementById('ltPreview').className='preview-box';
+  document.getElementById('ltPreview').textContent='Selecione o horário, direção e pontos para ver o preview...';
+  document.getElementById('btnRegistrar').disabled=true;
+  document.getElementById('btnDesfazer').disabled=false;
+  const al=document.getElementById('alertSuccess');al.style.display='block';setTimeout(()=>al.style.display='none',3000);
+  saveToStorage();renderNewTradesLog();updateDashboard();
+}
+
+function desfazerUltimo(){if(!newTrades.length)return;trades.pop();newTrades.pop();document.getElementById('btnDesfazer').disabled=newTrades.length===0;saveToStorage();renderNewTradesLog();updateDashboard();}
+
+function renderNewTradesLog(){
+  const el=document.getElementById('newTradesLog');
+  setText('newCount',`(${newTrades.length})`);
+  const sesTotal=newTrades.reduce((s,t)=>s+t.rs,0),sesCap=newTrades.length>0?newTrades[newTrades.length-1].cap:null;
+  const srEl=document.getElementById('sessaoResult');
+  if(srEl){srEl.textContent=newTrades.length>0?fmtRs(sesTotal):'—';srEl.className='cv '+(newTrades.length>0?(sesTotal>=0?'green':'red'):'');}
+  const scEl=document.getElementById('sessaoCap');
+  if(scEl){scEl.textContent=sesCap?'R$ '+sesCap.toLocaleString('pt-BR'):'—';if(sesCap)scEl.className='cv cyan';}
+  if(!newTrades.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:.7rem;letter-spacing:2px;">NENHUM TRADE NOVO AINDA</div>';return;}
+  el.innerHTML=[...newTrades].reverse().map(t=>`<div class="log-entry">
+    <div class="le-left">
+      <span class="le-n">#${t.n}</span>
+      <span class="le-info">${t.data} · <span class="badge ${t.tipo==='C'?'c':'v'}">${t.tipo}</span> · ${t.hora}${t.contratos>1?` · <span style="color:var(--cyan);font-weight:700">${t.contratos}x</span>`:''}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="le-result ${t.win?'win-txt':'loss-txt'}">${fmtPts(t.pts)} pts</span>
+      ${t.contratos>1?`<span style="font-size:.65rem;color:var(--cyan)">${fmtRs(t.rs)}</span>`:''}
+      <span style="font-size:.75rem;color:var(--muted)">→ R$ ${t.cap.toLocaleString('pt-BR')}</span>
+      <span class="badge ${t.win?'w':'l'}">${t.win?'WIN':'LOSS'}</span>
+    </div>
+  </div>`).join('');
+}
+
+function selMood(btn,mood){document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');document.getElementById('jMood').value=mood;}
+function salvarEntrada(){const data=document.getElementById('jData').value,sessao=document.getElementById('jSessao').value,titulo=document.getElementById('jTitulo').value.trim(),texto=document.getElementById('jTexto').value.trim(),licoes=document.getElementById('jLicoes').value.trim(),mood=document.getElementById('jMood').value;if(!texto&&!titulo){alert('Preencha pelo menos o título ou as anotações.');return;}journalData.unshift({id:Date.now(),data,sessao,titulo:titulo||'Entrada sem título',texto,licoes,mood});saveToStorage();renderJournal();document.getElementById('jTitulo').value='';document.getElementById('jTexto').value='';document.getElementById('jLicoes').value='';document.getElementById('jMood').value='';document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));}
+function deletarEntrada(id){journalData=journalData.filter(e=>e.id!==id);saveToStorage();renderJournal();}
+function renderJournal(){const el=document.getElementById('journalEntries');setText('entryCount',`(${journalData.length})`);if(!journalData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:.7rem;letter-spacing:2px;">NENHUMA ENTRADA AINDA</div>';return;}el.innerHTML=journalData.map(e=>{const[y,m,d]=e.data.split('-');const sc=e.sessao==='pos'?'pos':e.sessao==='neg'?'neg':'neu';const sl=e.sessao==='pos'?'✅ Positiva':e.sessao==='neg'?'❌ Negativa':'⚖️ Neutra';return`<div class="journal-entry"><div class="entry-header"><div style="display:flex;align-items:center;gap:8px"><span class="entry-date">${d}/${m}/${y}</span>${e.mood?`<span>${e.mood}</span>`:''}</div><div style="display:flex;align-items:center;gap:8px"><span class="entry-session ${sc}">${sl}</span><button class="entry-delete" onclick="deletarEntrada(${e.id})">✕</button></div></div><div class="entry-title">${e.titulo}</div>${e.texto?`<div class="entry-body">${e.texto}</div>`:''}${e.licoes?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:.55rem;letter-spacing:2px;color:var(--muted);margin-bottom:4px">LIÇÕES APRENDIDAS</div><div class="entry-body" style="color:#aaa">${e.licoes}</div></div>`:''}</div>`;}).join('');}
+function showTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');el.classList.add('active');}
+window.addEventListener('load',()=>{
+  const now=new Date(),yy=now.getFullYear(),mm=String(now.getMonth()+1).padStart(2,'0'),dd=String(now.getDate()).padStart(2,'0');
+  document.getElementById('ltData').value=`${yy}-${mm}-${dd}`;document.getElementById('jData').value=`${yy}-${mm}-${dd}`;
+  document.getElementById('ltPts').addEventListener('input',updatePreview);document.getElementById('ltData').addEventListener('input',updatePreview);
+  loadFromStorage();initCharts();updateDashboard();
+  if(newTrades.length>0){document.getElementById('btnDesfazer').disabled=false;renderNewTradesLog();renderJournal();}
+});
+</script>
+</body>
+</html>
