@@ -196,7 +196,14 @@ tr:last-child td{border-bottom:none;}tr:hover td{background:#161616;}
 table{font-size:.68rem;}
 th{padding:8px 10px;}
 td{padding:8px 10px;}
-}</style>
+}
+/* ── MODO VISITANTE (nuvem ativa, sem login): esconde tudo que edita ── */
+body.visitor .tab.lancar-tab{display:none!important;}
+body.visitor #tab-lancar{display:none!important;}
+body.visitor .journal-form{display:none!important;}
+body.visitor .edit-hint{display:none!important;}
+body.visitor .entry-delete{display:none!important;}
+body.visitor [contenteditable]{pointer-events:none!important;}</style>
 </head>
 <body>
 <div class="header">
@@ -528,7 +535,24 @@ function cloudLogin(){
     .then(function(){setSaveIndicator(true,'☁ conectado');})
     .catch(function(e){alert('Erro no login: '+e.message);});
 }
+let autoSwitched=false;
+function updateEditUI(){
+  const visitor=cloudEnabled()&&!fbUser;
+  document.body.classList.toggle('visitor',visitor);
+  const lancTab=document.querySelector('.tab.lancar-tab');
+  const lancContent=document.getElementById('tab-lancar');
+  if(visitor){
+    if(lancContent&&lancContent.classList.contains('active')){
+      const first=document.querySelector('.tab');
+      if(first)showTab('performance',first);
+      autoSwitched=true;
+    }
+  }else if(autoSwitched&&lancTab){
+    showTab('lancar',lancTab);autoSwitched=false;
+  }
+}
 function updateCloudUI(){
+  updateEditUI();
   const b=document.getElementById('btnCloud');if(!b)return;
   if(!cloudEnabled()){b.textContent='☁ NUVEM: NÃO CONFIGURADA';b.style.color='var(--muted)';return;}
   b.textContent=fbUser?'☁ ONLINE (SAIR)':'☁ ENTRAR NA NUVEM';
