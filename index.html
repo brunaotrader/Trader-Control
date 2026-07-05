@@ -200,6 +200,8 @@ td{padding:8px 10px;}
 /* ── MODO VISITANTE (nuvem ativa, sem login): esconde tudo que edita ── */
 body.visitor .tab.lancar-tab{display:none!important;}
 body.visitor #tab-lancar{display:none!important;}
+body.visitor .tab[onclick*="'diario'"]{display:none!important;}
+body.visitor #tab-diario{display:none!important;}
 body.visitor .journal-form{display:none!important;}
 body.visitor .edit-hint{display:none!important;}
 body.visitor .entry-delete{display:none!important;}
