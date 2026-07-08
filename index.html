@@ -344,6 +344,8 @@ body.visitor [contenteditable]{pointer-events:none!important;}</style>
     <div class="card"><div class="cv cyan" id="pirContratos">—</div><div class="cl">CONTRATOS PERMITIDOS AGORA</div></div>
     <div class="card"><div class="cv green" id="pirMeta">—</div><div class="cl">PRÓXIMA META</div></div>
   </div>
+  <div class="section-label">A PIRÂMIDE</div>
+  <div class="chart-wrap" style="text-align:center;"><div id="pirFigura"></div></div>
   <div class="section-label">TABELA DE NÍVEIS</div>
   <div class="tbl-wrap"><table><thead><tr><th>NÍVEL</th><th>CAPITAL MÍNIMO</th><th>CAPITAL MÁXIMO</th><th>CONTRATOS</th></tr></thead><tbody id="pirBody"></tbody></table></div>
 </div>
@@ -674,20 +676,46 @@ function updateDashboard(){
 function renderPiramide(){
   const nEl=document.getElementById('pirNivel');if(!nEl)return;
   const cap=trades[trades.length-1].cap;
-  const nivel=Math.max(1,Math.floor(cap/1000));
+  const NIV=20;
+  const minNivel=function(n){return n===1?1000:(n*1000+500);};
+  let nivel=1;
+  for(let i=NIV;i>=1;i--){if(cap>=minNivel(i)){nivel=i;break;}}
   const contratos=nivel;
-  const meta=(nivel+1)*1000;
+  const meta=nivel<NIV?minNivel(nivel+1):null;
   setText('pirNivel','NÍVEL '+nivel);
   setText('pirContratos',contratos+(contratos>1?' CONTRATOS':' CONTRATO'));
-  setText('pirMeta','R$ '+meta.toLocaleString('pt-BR'));
-  const tb=document.getElementById('pirBody');if(!tb)return;
-  let rows='';
-  for(let n=1;n<=10;n++){
-    const min=n*1000,max=(n+1)*1000-1;
-    const atual=(nivel===n);
-    rows+='<tr style="'+(atual?'background:#00ff880d;font-weight:700':'')+'"><td class="'+(atual?'win-txt':'')+'">NÍVEL '+n+(atual?' ◄ VOCÊ':'')+'</td><td>R$ '+min.toLocaleString('pt-BR')+'</td><td>R$ '+max.toLocaleString('pt-BR')+'</td><td style="color:var(--cyan)">'+n+'</td></tr>';
+  setText('pirMeta',meta?('R$ '+meta.toLocaleString('pt-BR')):'TOPO!');
+  const tb=document.getElementById('pirBody');
+  if(tb){
+    let rows='';
+    for(let n=1;n<=NIV;n++){
+      const min=minNivel(n),max=(n<NIV)?(minNivel(n+1)-1):null;
+      const atual=(nivel===n);
+      rows+='<tr style="'+(atual?'background:#00ff880d;font-weight:700':'')+'"><td class="'+(atual?'win-txt':'')+'">NÍVEL '+n+(atual?' ◄ VOCÊ':'')+'</td><td>R$ '+min.toLocaleString('pt-BR')+'</td><td>'+(max?('R$ '+max.toLocaleString('pt-BR')):'—')+'</td><td style="color:var(--cyan)">'+n+'</td></tr>';
+    }
+    tb.innerHTML=rows;
   }
-  tb.innerHTML=rows;
+  const fig=document.getElementById('pirFigura');
+  if(fig){
+    const H=26,baseY=40+NIV*H,cx=260,wBot=410,wTop=80,passo=(wBot-wTop)/(NIV-1);
+    const larg=function(n){return wBot-passo*(n-1);};
+    let svg='<svg viewBox="0 0 560 '+(baseY+40)+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:560px;">';
+    svg+='<text x="'+cx+'" y="22" text-anchor="middle" font-family="Courier New,monospace" font-size="15" font-weight="700" fill="#c8ff00" letter-spacing="2">PIRÂMIDE DE EVOLUÇÃO DE CAPITAL</text>';
+    for(let n=1;n<=NIV;n++){
+      const y1=baseY-(n-1)*H,y0=y1-H;
+      const wb=larg(n),wt=(n<NIV)?larg(n+1):(wTop-passo);
+      const t=(n-1)/(NIV-1);
+      const atual=(n===nivel);
+      const fill='hsl(38,'+Math.round(62-t*18)+'%,'+Math.round(34+t*54)+'%)';
+      svg+='<polygon points="'+(cx-wb/2)+','+y1+' '+(cx+wb/2)+','+y1+' '+(cx+wt/2)+','+y0+' '+(cx-wt/2)+','+y0+'" fill="'+fill+'" stroke="'+(atual?'#00ff88':'#0a0a0a')+'" stroke-width="'+(atual?3:1)+'"/>';
+      svg+='<text x="'+cx+'" y="'+(y1-8)+'" text-anchor="middle" font-family="Courier New,monospace" font-size="12" font-weight="700" fill="#1a1a1a">'+n+'c</text>';
+      svg+='<text x="18" y="'+(y1-8)+'" font-family="Courier New,monospace" font-size="9" fill="'+(atual?'#00ff88':'#556')+'">N'+String(n).padStart(2,'0')+(atual?' ◄ VOCÊ':'')+'</text>';
+      svg+='<text x="488" y="'+(y1-8)+'" font-family="Courier New,monospace" font-size="9" fill="'+(atual?'#00ff88':'#5b8fd6')+'">R$ '+minNivel(n).toLocaleString('pt-BR')+'</text>';
+    }
+    svg+='<text x="'+cx+'" y="'+(baseY+24)+'" text-anchor="middle" font-family="Courier New,monospace" font-size="9" fill="#666">Base: aporte inicial de R$ 1.000 | Progressão: +1 contrato a cada R$ 1.000 de evolução (a partir do Nível 2)</text>';
+    svg+='</svg>';
+    fig.innerHTML=svg;
+  }
 }
 function renderTradesTable(){
   const tbody=document.getElementById('tradesBody');if(!tbody)return;
